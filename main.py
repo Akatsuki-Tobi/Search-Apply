@@ -561,5 +561,13 @@ def main():
         logger.exception(f"An unexpected error occurred: {e}")
 
 
+def handler(*args, **kwargs):
+    """Fallback handler for serverless or host execution environments."""
+    return main()
+
+app = handler
+application = handler
+
+
 if __name__ == "__main__":
     main()
