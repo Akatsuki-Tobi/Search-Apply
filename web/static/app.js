@@ -1,5 +1,6 @@
 // Global State
 let logEventSource = null;
+let activeProfileData = null;
 
 // Initialize on DOM load
 document.addEventListener("DOMContentLoaded", () => {
@@ -140,15 +141,61 @@ async function generateCoverLetter(event) {
 async function openProfileModal() {
     const modal = document.getElementById("profile-modal");
     modal.classList.remove("hidden");
+    
+    switchTab('tab-general');
 
     try {
         const response = await fetch("/api/profile");
         if (!response.ok) throw new Error("Failed to load profile parameters.");
         const data = await response.json();
+        
+        activeProfileData = data;
 
-        document.getElementById("yaml-resume").value = data.resume_yaml;
-        document.getElementById("yaml-preferences").value = data.preferences_yaml;
-        document.getElementById("yaml-secrets").value = data.secrets_yaml;
+        document.getElementById("yaml-resume").value = data.resume_yaml || "";
+        document.getElementById("yaml-preferences").value = data.preferences_yaml || "";
+        document.getElementById("yaml-secrets").value = data.secrets_yaml || "";
+
+        // 1. Secrets
+        document.getElementById("form-llm-api-key").value = data.secrets_json.llm_api_key || "";
+
+        // 2. Preferences
+        document.getElementById("pref-remote").checked = !!data.preferences_json.remote;
+        document.getElementById("pref-hybrid").checked = !!data.preferences_json.hybrid;
+        document.getElementById("pref-onsite").checked = !!data.preferences_json.onsite;
+
+        const jobTypes = data.preferences_json.job_types || {};
+        document.getElementById("type-fulltime").checked = !!jobTypes.full_time;
+        document.getElementById("type-contract").checked = !!jobTypes.contract;
+        document.getElementById("type-parttime").checked = !!jobTypes.part_time;
+
+        const expLvl = data.preferences_json.experience_level || {};
+        document.getElementById("exp-internship").checked = !!expLvl.internship;
+        document.getElementById("exp-entry").checked = !!expLvl.entry;
+        document.getElementById("exp-associate").checked = !!expLvl.associate;
+        document.getElementById("exp-mid").checked = !!expLvl.mid_senior_level;
+        document.getElementById("exp-director").checked = !!expLvl.director;
+        document.getElementById("exp-executive").checked = !!expLvl.executive;
+
+        document.getElementById("pref-positions").value = (data.preferences_json.positions || []).join(", ");
+        document.getElementById("pref-locations").value = (data.preferences_json.locations || []).join(", ");
+
+        // 3. Resume Personal Info
+        const pi = data.resume_json.personal_information || {};
+        document.getElementById("resume-name").value = pi.name || "";
+        document.getElementById("resume-surname").value = pi.surname || "";
+        document.getElementById("resume-email").value = pi.email || "";
+        document.getElementById("resume-dob").value = pi.date_of_birth || "";
+        document.getElementById("resume-phone-prefix").value = pi.phone_prefix || "";
+        document.getElementById("resume-phone").value = pi.phone || "";
+        document.getElementById("resume-country").value = pi.country || "";
+        document.getElementById("resume-city").value = pi.city || "";
+        document.getElementById("resume-zip").value = pi.zip_code || "";
+        document.getElementById("resume-address").value = pi.address || "";
+        
+        const formatUrl = (val) => (val && typeof val === 'object') ? (val.unicode || val.url || '') : (val || '');
+        document.getElementById("resume-github").value = formatUrl(pi.github);
+        document.getElementById("resume-linkedin").value = formatUrl(pi.linkedin);
+
     } catch (err) {
         alert("Error loading profile: " + err.message);
     }
@@ -159,42 +206,131 @@ function closeProfileModal() {
 }
 
 function switchTab(tabId) {
-    // Hide all contents
     document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
-    // Show selected content
     document.getElementById(tabId).classList.remove("hidden");
 
-    // Update active tab buttons states
     document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-    event.currentTarget.classList.add("active");
+    
+    const targetBtn = document.getElementById("btn-" + tabId) || (event ? event.currentTarget : null);
+    if (targetBtn) {
+        targetBtn.classList.add("active");
+    }
 }
 
 async function saveProfile() {
-    const resumeYaml = document.getElementById("yaml-resume").value;
-    const preferencesYaml = document.getElementById("yaml-preferences").value;
-    const secretsYaml = document.getElementById("yaml-secrets").value;
+    const isAdvancedTabActive = !document.getElementById("tab-advanced").classList.contains("hidden");
 
     try {
-        const response = await fetch("/api/profile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                resume_yaml: resumeYaml,
-                preferences_yaml: preferencesYaml,
-                secrets_yaml: secretsYaml
-            })
-        });
+        if (isAdvancedTabActive) {
+            const resumeYaml = document.getElementById("yaml-resume").value;
+            const preferencesYaml = document.getElementById("yaml-preferences").value;
+            const secretsYaml = document.getElementById("yaml-secrets").value;
 
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.detail || "Validation check failed.");
+            const response = await fetch("/api/profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    resume_yaml: resumeYaml,
+                    preferences_yaml: preferencesYaml,
+                    secrets_yaml: secretsYaml
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.detail || "Validation check failed.");
+            }
+        } else {
+            if (!activeProfileData) throw new Error("No active profile data loaded.");
+
+            // 1. Secrets
+            activeProfileData.secrets_json.llm_api_key = document.getElementById("form-llm-api-key").value;
+
+            // 2. Preferences
+            activeProfileData.preferences_json.remote = document.getElementById("pref-remote").checked;
+            activeProfileData.preferences_json.hybrid = document.getElementById("pref-hybrid").checked;
+            activeProfileData.preferences_json.onsite = document.getElementById("pref-onsite").checked;
+
+            if (!activeProfileData.preferences_json.experience_level) activeProfileData.preferences_json.experience_level = {};
+            activeProfileData.preferences_json.experience_level.internship = document.getElementById("exp-internship").checked;
+            activeProfileData.preferences_json.experience_level.entry = document.getElementById("exp-entry").checked;
+            activeProfileData.preferences_json.experience_level.associate = document.getElementById("exp-associate").checked;
+            activeProfileData.preferences_json.experience_level.mid_senior_level = document.getElementById("exp-mid").checked;
+            activeProfileData.preferences_json.experience_level.director = document.getElementById("exp-director").checked;
+            activeProfileData.preferences_json.experience_level.executive = document.getElementById("exp-executive").checked;
+
+            if (!activeProfileData.preferences_json.job_types) activeProfileData.preferences_json.job_types = {};
+            activeProfileData.preferences_json.job_types.full_time = document.getElementById("type-fulltime").checked;
+            activeProfileData.preferences_json.job_types.contract = document.getElementById("type-contract").checked;
+            activeProfileData.preferences_json.job_types.part_time = document.getElementById("type-parttime").checked;
+
+            activeProfileData.preferences_json.positions = document.getElementById("pref-positions").value.split(",").map(s => s.trim()).filter(s => s);
+            activeProfileData.preferences_json.locations = document.getElementById("pref-locations").value.split(",").map(s => s.trim()).filter(s => s);
+
+            // 3. Resume Personal Info
+            if (!activeProfileData.resume_json.personal_information) activeProfileData.resume_json.personal_information = {};
+            const pi = activeProfileData.resume_json.personal_information;
+            pi.name = document.getElementById("resume-name").value;
+            pi.surname = document.getElementById("resume-surname").value;
+            pi.email = document.getElementById("resume-email").value;
+            pi.date_of_birth = document.getElementById("resume-dob").value;
+            pi.phone_prefix = document.getElementById("resume-phone-prefix").value;
+            pi.phone = document.getElementById("resume-phone").value;
+            pi.country = document.getElementById("resume-country").value;
+            pi.city = document.getElementById("resume-city").value;
+            pi.zip_code = document.getElementById("resume-zip").value;
+            pi.address = document.getElementById("resume-address").value;
+            pi.github = document.getElementById("resume-github").value || null;
+            pi.linkedin = document.getElementById("resume-linkedin").value || null;
+
+            const response = await fetch("/api/profile-json", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    resume_json: activeProfileData.resume_json,
+                    preferences_json: activeProfileData.preferences_json,
+                    secrets_json: activeProfileData.secrets_json
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.detail || "Validation check failed.");
+            }
         }
 
-        appendConsoleLine("System", "Configuration and secrets updated and validated successfully.", "info-line");
+        appendConsoleLine("System", "Configuration parameters updated and validated successfully.", "info-line");
         closeProfileModal();
         await checkResumeStatus();
     } catch (err) {
         alert("Save Error: " + err.message);
+    }
+}
+
+function toggleApiKeyPeek() {
+    const keyInput = document.getElementById("form-llm-api-key");
+    const peekIcon = document.getElementById("toggle-api-key-peek");
+    if (keyInput.type === "password") {
+        keyInput.type = "text";
+        peekIcon.className = "fa-solid fa-eye-slash";
+    } else {
+        keyInput.type = "password";
+        peekIcon.className = "fa-solid fa-eye";
+    }
+}
+
+function switchYamlEditor() {
+    const selectorVal = document.getElementById("yaml-file-selector").value;
+    document.getElementById("editor-resume-wrapper").classList.add("hidden");
+    document.getElementById("editor-preferences-wrapper").classList.add("hidden");
+    document.getElementById("editor-secrets-wrapper").classList.add("hidden");
+
+    if (selectorVal === "resume") {
+        document.getElementById("editor-resume-wrapper").classList.remove("hidden");
+    } else if (selectorVal === "preferences") {
+        document.getElementById("editor-preferences-wrapper").classList.remove("hidden");
+    } else if (selectorVal === "secrets") {
+        document.getElementById("editor-secrets-wrapper").classList.remove("hidden");
     }
 }
 

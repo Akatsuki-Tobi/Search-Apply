@@ -123,36 +123,172 @@
             </div>
             
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('tab-resume')">Resume (YAML)</button>
-                <button class="tab-btn" onclick="switchTab('tab-preferences')">Preferences (YAML)</button>
-                <button class="tab-btn" onclick="switchTab('tab-secrets')">Secrets (YAML)</button>
+                <button class="tab-btn active" id="btn-tab-general" onclick="switchTab('tab-general')">General Settings</button>
+                <button class="tab-btn" id="btn-tab-personal" onclick="switchTab('tab-personal')">Personal Info</button>
+                <button class="tab-btn" id="btn-tab-advanced" onclick="switchTab('tab-advanced')">Advanced (YAML)</button>
             </div>
 
-            <div class="tab-content" id="tab-resume">
-                <div class="tab-toolbar" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
-                    <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem;" onclick="triggerDemoResume()">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Load Demo Resume
-                    </button>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <input type="file" id="resume-file" accept=".pdf,.txt" style="display: none;" onchange="uploadAndParseResume()">
-                        <label for="resume-file" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; cursor: pointer; margin-bottom: 0;">
-                            <i class="fa-solid fa-file-pdf"></i> Upload & Parse PDF/TXT
-                        </label>
-                        <span id="upload-status" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+            <!-- Tab 1: General Settings Form -->
+            <div class="tab-content" id="tab-general" style="max-height: 380px; overflow-y: auto; padding-right: 10px; margin-bottom: 12px;">
+                <!-- Secrets Section -->
+                <div style="margin-bottom: 24px;">
+                    <h3 style="font-size: 1rem; font-family: var(--font-display); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; color: var(--primary);"><i class="fa-solid fa-key"></i> API Secrets</h3>
+                    <div class="form-group">
+                        <label for="form-llm-api-key">OpenAI API Key (llm_api_key)</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="form-llm-api-key" placeholder="sk-..." style="padding-right: 48px;">
+                            <i class="fa-solid fa-eye" id="toggle-api-key-peek" style="position: absolute; right: 16px; cursor: pointer; color: var(--text-secondary);" onclick="toggleApiKeyPeek()"></i>
+                        </div>
                     </div>
                 </div>
-                <textarea id="yaml-resume" class="code-editor" spellcheck="false"></textarea>
+                
+                <!-- Search Preferences Section -->
+                <div>
+                    <h3 style="font-size: 1rem; font-family: var(--font-display); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; color: var(--secondary);"><i class="fa-solid fa-sliders"></i> Job Application Filters</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px;">
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; text-transform: uppercase;">Work Modes</label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-bottom: 6px; cursor: pointer;"><input type="checkbox" id="pref-remote"> Remote Work</label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-bottom: 6px; cursor: pointer;"><input type="checkbox" id="pref-hybrid"> Hybrid Work</label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-bottom: 6px; cursor: pointer;"><input type="checkbox" id="pref-onsite"> Onsite Work</label>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; text-transform: uppercase;">Job Categories</label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-bottom: 6px; cursor: pointer;"><input type="checkbox" id="type-fulltime"> Full-time</label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-bottom: 6px; cursor: pointer;"><input type="checkbox" id="type-contract"> Contract</label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-bottom: 6px; cursor: pointer;"><input type="checkbox" id="type-parttime"> Part-time</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="text-transform: uppercase; font-size: 0.8rem; margin-bottom: 6px;">Experience Level Targets</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;"><input type="checkbox" id="exp-internship"> Internship</label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;"><input type="checkbox" id="exp-entry"> Entry Level</label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;"><input type="checkbox" id="exp-associate"> Associate</label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;"><input type="checkbox" id="exp-mid"> Mid-Senior</label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;"><input type="checkbox" id="exp-director"> Director</label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;"><input type="checkbox" id="exp-executive"> Executive</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pref-positions">Target Job Titles (comma separated)</label>
+                        <input type="text" id="pref-positions" placeholder="Software Engineer, Data Analyst">
+                    </div>
+                    <div class="form-group">
+                        <label for="pref-locations">Target Location Regions (comma separated)</label>
+                        <input type="text" id="pref-locations" placeholder="Germany, United States">
+                    </div>
+                </div>
             </div>
-            <div class="tab-content hidden" id="tab-preferences">
-                <textarea id="yaml-preferences" class="code-editor" spellcheck="false"></textarea>
+
+            <!-- Tab 2: Personal Info Form -->
+            <div class="tab-content hidden" id="tab-personal" style="max-height: 380px; overflow-y: auto; padding-right: 10px; margin-bottom: 12px;">
+                <h3 style="font-size: 1rem; font-family: var(--font-display); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; color: var(--primary);"><i class="fa-solid fa-address-card"></i> Contact Information</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="resume-name">First Name</label>
+                        <input type="text" id="resume-name" placeholder="John">
+                    </div>
+                    <div class="form-group">
+                        <label for="resume-surname">Last Name</label>
+                        <input type="text" id="resume-surname" placeholder="Doe">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="resume-email">Email Address</label>
+                        <input type="email" id="resume-email" placeholder="john.doe@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="resume-dob">Date of Birth (DD/MM/YYYY)</label>
+                        <input type="text" id="resume-dob" placeholder="15/08/1995">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="resume-phone-prefix">Phone Prefix</label>
+                        <input type="text" id="resume-phone-prefix" placeholder="+1">
+                    </div>
+                    <div class="form-group">
+                        <label for="resume-phone">Phone Number</label>
+                        <input type="text" id="resume-phone" placeholder="7819117091">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="resume-country">Country</label>
+                        <input type="text" id="resume-country" placeholder="United States">
+                    </div>
+                    <div class="form-group">
+                        <label for="resume-city">City</label>
+                        <input type="text" id="resume-city" placeholder="New York">
+                    </div>
+                    <div class="form-group">
+                        <label for="resume-zip">Zip Code</label>
+                        <input type="text" id="resume-zip" placeholder="10001">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="resume-address">Street Address</label>
+                    <input type="text" id="resume-address" placeholder="123 Broadway">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="resume-github">GitHub URL</label>
+                        <input type="url" id="resume-github" placeholder="https://github.com/johndoe">
+                    </div>
+                    <div class="form-group">
+                        <label for="resume-linkedin">LinkedIn Profile URL</label>
+                        <input type="url" id="resume-linkedin" placeholder="https://linkedin.com/in/johndoe">
+                    </div>
+                </div>
             </div>
-            <div class="tab-content hidden" id="tab-secrets">
-                <textarea id="yaml-secrets" class="code-editor" spellcheck="false"></textarea>
+
+            <!-- Tab 3: Advanced YAML Editor -->
+            <div class="tab-content hidden" id="tab-advanced">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-size: 0.8rem; color: var(--accent);"><i class="fa-solid fa-triangle-exclamation"></i> YAML syntax rules apply.</span>
+                    <select id="yaml-file-selector" onchange="switchYamlEditor()" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">
+                        <option value="resume">plain_text_resume.yaml</option>
+                        <option value="preferences">work_preferences.yaml</option>
+                        <option value="secrets">secrets.yaml</option>
+                    </select>
+                </div>
+                
+                <div id="editor-resume-wrapper">
+                    <div class="tab-toolbar" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem;" onclick="triggerDemoResume()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Load Demo Resume
+                        </button>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="file" id="resume-file" accept=".pdf,.txt" style="display: none;" onchange="uploadAndParseResume()">
+                            <label for="resume-file" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; cursor: pointer; margin-bottom: 0;">
+                                <i class="fa-solid fa-file-pdf"></i> Upload & Parse PDF/TXT
+                            </label>
+                            <span id="upload-status" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+                        </div>
+                    </div>
+                    <textarea id="yaml-resume" class="code-editor" spellcheck="false" style="height: 220px;"></textarea>
+                </div>
+                <div id="editor-preferences-wrapper" class="hidden">
+                    <textarea id="yaml-preferences" class="code-editor" spellcheck="false" style="height: 270px;"></textarea>
+                </div>
+                <div id="editor-secrets-wrapper" class="hidden">
+                    <textarea id="yaml-secrets" class="code-editor" spellcheck="false" style="height: 270px;"></textarea>
+                </div>
             </div>
 
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeProfileModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save & Validate</button>
+                <button class="btn btn-primary" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save Configurations</button>
             </div>
         </div>
     </div>

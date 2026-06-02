@@ -83,10 +83,29 @@ async def get_profile():
         preferences_content = preferences_path.read_text(encoding="utf-8") if preferences_path.exists() else ""
         secrets_content = secrets_path.read_text(encoding="utf-8") if secrets_path.exists() else ""
 
+        # Parse YAML to dicts, fallback to empty dict if error or empty
+        try:
+            resume_json = yaml.safe_load(resume_content) or {}
+        except Exception:
+            resume_json = {}
+
+        try:
+            preferences_json = yaml.safe_load(preferences_content) or {}
+        except Exception:
+            preferences_json = {}
+
+        try:
+            secrets_json = yaml.safe_load(secrets_content) or {}
+        except Exception:
+            secrets_json = {}
+
         return {
             "resume_yaml": resume_content,
             "preferences_yaml": preferences_content,
-            "secrets_yaml": secrets_content
+            "secrets_yaml": secrets_content,
+            "resume_json": resume_json,
+            "preferences_json": preferences_json,
+            "secrets_json": secrets_json
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -115,6 +134,39 @@ async def update_profile(profile: ProfileRequest):
         raise HTTPException(status_code=400, detail=f"Invalid YAML Syntax: {ye}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class ProfileJsonRequest(BaseModel):
+    resume_json: dict
+    preferences_json: dict
+    secrets_json: dict
+
+@app.post("/api/profile-json")
+async def update_profile_json(payload: ProfileJsonRequest):
+    data_folder = Path("data_folder")
+    try:
+        resume_path = data_folder / PLAIN_TEXT_RESUME_YAML
+        preferences_path = data_folder / WORK_PREFERENCES_YAML
+        secrets_path = data_folder / SECRETS_YAML
+
+        resume_yaml = yaml.dump(payload.resume_json, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        preferences_yaml = yaml.dump(payload.preferences_json, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        secrets_yaml = yaml.dump(payload.secrets_json, default_flow_style=False, sort_keys=False, allow_unicode=True)
+
+        from src.resume_schemas.resume import Resume
+        try:
+            Resume(resume_yaml)
+        except Exception as e:
+            raise ValueError(f"Resume structure validation failed: {e}")
+
+        resume_path.write_text(resume_yaml, encoding="utf-8")
+        preferences_path.write_text(preferences_yaml, encoding="utf-8")
+        secrets_path.write_text(secrets_yaml, encoding="utf-8")
+
+        logger.info("Successfully updated JSON configurations in data_folder.")
+        return {"status": "success", "message": "Profiles saved and validated."}
+    except Exception as e:
+        logger.error(f"Error saving profile: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/resume-status")
 async def get_resume_status():
@@ -256,9 +308,9 @@ async def parse_resume_file(file: UploadFile = File(...)):
     with open(secrets_path, "r", encoding="utf-8") as f:
         secrets = yaml.safe_load(f) or {}
     
-    api_key = secrets.get("openai_api_key", "")
+    api_key = secrets.get("llm_api_key", "") or secrets.get("openai_api_key", "")
     if not api_key:
-        raise HTTPException(status_code=400, detail="OpenAI API Key is missing in your Secrets tab. Please configure it first!")
+        raise HTTPException(status_code=400, detail="OpenAI API Key (llm_api_key) is missing in your Secrets tab. Please configure it first!")
          
     try:
         raw_text = await extract_text_from_upload(file)
