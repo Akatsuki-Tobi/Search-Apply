@@ -28,3 +28,4 @@ undetected-chromedriver==3.5.5
 fastapi
 uvicorn
 jinja2
+python-multipart
