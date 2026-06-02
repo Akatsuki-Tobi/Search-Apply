@@ -4,10 +4,9 @@ Create a class that generates a resume based on a resume and a resume template.
 # app/libs/resume_and_cover_builder/gpt_resume.py
 import os
 import textwrap
-from src.libs.resume_and_cover_builder.utils import LoggerChatModel
+from src.libs.resume_and_cover_builder.utils import LoggerChatModel, get_chat_model
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from loguru import logger
@@ -26,9 +25,7 @@ logger.add(log_path / "gpt_resume.log", rotation="1 day", compression="zip", ret
 class LLMResumer:
     def __init__(self, openai_api_key, strings):
         self.llm_cheap = LoggerChatModel(
-            ChatOpenAI(
-                model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.4
-            )
+            get_chat_model(api_key=openai_api_key, temperature=0.4)
         )
         self.strings = strings
 

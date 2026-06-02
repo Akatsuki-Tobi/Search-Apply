@@ -157,6 +157,8 @@ async function openProfileModal() {
 
         // 1. Secrets
         document.getElementById("form-llm-api-key").value = data.secrets_json.llm_api_key || "";
+        document.getElementById("form-llm-model-type").value = data.secrets_json.llm_model_type || "openai";
+        document.getElementById("form-llm-model").value = data.secrets_json.llm_model || "gpt-4o-mini";
 
         // 2. Preferences
         document.getElementById("pref-remote").checked = !!data.preferences_json.remote;
@@ -245,6 +247,8 @@ async function saveProfile() {
 
             // 1. Secrets
             activeProfileData.secrets_json.llm_api_key = document.getElementById("form-llm-api-key").value;
+            activeProfileData.secrets_json.llm_model_type = document.getElementById("form-llm-model-type").value;
+            activeProfileData.secrets_json.llm_model = document.getElementById("form-llm-model").value;
 
             // 2. Preferences
             activeProfileData.preferences_json.remote = document.getElementById("pref-remote").checked;
@@ -316,6 +320,18 @@ function toggleApiKeyPeek() {
     } else {
         keyInput.type = "password";
         peekIcon.className = "fa-solid fa-eye";
+    }
+}
+
+function updateDefaultModel() {
+    const provider = document.getElementById("form-llm-model-type").value;
+    const modelInput = document.getElementById("form-llm-model");
+    if (provider === "openai") {
+        modelInput.value = "gpt-4o-mini";
+    } else if (provider === "gemini") {
+        modelInput.value = "gemini-1.5-flash";
+    } else if (provider === "claude") {
+        modelInput.value = "claude-3-5-sonnet-20240620";
     }
 }
 

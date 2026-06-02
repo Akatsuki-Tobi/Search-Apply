@@ -134,10 +134,24 @@
                 <div style="margin-bottom: 24px;">
                     <h3 style="font-size: 1rem; font-family: var(--font-display); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; color: var(--primary);"><i class="fa-solid fa-key"></i> API Secrets</h3>
                     <div class="form-group">
-                        <label for="form-llm-api-key">OpenAI API Key (llm_api_key)</label>
+                        <label for="form-llm-api-key">LLM API Key (OpenAI Key / Gemini Key / Claude Key)</label>
                         <div style="position: relative; display: flex; align-items: center;">
-                            <input type="password" id="form-llm-api-key" placeholder="sk-..." style="padding-right: 48px;">
+                            <input type="password" id="form-llm-api-key" placeholder="API Key..." style="padding-right: 48px;">
                             <i class="fa-solid fa-eye" id="toggle-api-key-peek" style="position: absolute; right: 16px; cursor: pointer; color: var(--text-secondary);" onclick="toggleApiKeyPeek()"></i>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="form-llm-model-type">LLM Provider</label>
+                            <select id="form-llm-model-type" onchange="updateDefaultModel()">
+                                <option value="openai">OpenAI</option>
+                                <option value="gemini">Google Gemini</option>
+                                <option value="claude">Anthropic Claude</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="form-llm-model">LLM Model Name</label>
+                            <input type="text" id="form-llm-model" placeholder="gpt-4o-mini">
                         </div>
                     </div>
                 </div>

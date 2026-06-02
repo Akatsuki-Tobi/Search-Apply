@@ -74,9 +74,52 @@ class LLMLogger:
             f.write(json_string + "\n")
 
 
+def get_chat_model(api_key: str, model_type: str = None, model_name: str = None, temperature: float = 0.4):
+    if not model_type or not model_name:
+        try:
+            import config
+            model_type = getattr(config, "LLM_MODEL_TYPE", "openai")
+            model_name = getattr(config, "LLM_MODEL", "gpt-4o-mini")
+        except Exception:
+            model_type = "openai"
+            model_name = "gpt-4o-mini"
+
+    model_type = model_type.lower()
+    
+    if model_type == "openai":
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(model_name=model_name, openai_api_key=api_key, temperature=temperature)
+    elif model_type == "gemini":
+        from langchain_google_genai import ChatGoogleGenerativeAI, HarmBlockThreshold, HarmCategory
+        return ChatGoogleGenerativeAI(
+            model=model_name,
+            google_api_key=api_key,
+            temperature=temperature,
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DEROGATORY: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_TOXICITY: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_VIOLENCE: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUAL: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_MEDICAL: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+        )
+    elif model_type == "claude":
+        from langchain_anthropic import ChatAnthropic
+        return ChatAnthropic(model=model_name, api_key=api_key, temperature=temperature)
+    else:
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(model_name=model_name, openai_api_key=api_key, temperature=temperature)
+
+
 class LoggerChatModel:
 
-    def __init__(self, llm: ChatOpenAI):
+    def __init__(self, llm):
         self.llm = llm
 
     def __call__(self, messages: List[Dict[str, str]]) -> str:
@@ -95,11 +138,16 @@ class LoggerChatModel:
                     time.sleep(retry_delay)
                     retry_delay *= 2
                 else:
-                    wait_time = self.parse_wait_time_from_error_message(str(err))
-                    logger.warning(f"Rate limit exceeded or API error. Waiting for {wait_time} seconds before retrying (Attempt {attempt + 1}/{max_retries})...")
-                    time.sleep(wait_time)
+                    logger.warning(f"Rate limit exceeded or API error. Waiting for {retry_delay} seconds before retrying (Attempt {attempt + 1}/{max_retries})...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
             except Exception as e:
-                logger.error(f"Unexpected error occurred: {str(e)}, retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                # If error message mentions 429 or quota exceeded, warn immediately
+                err_msg = str(e)
+                if "429" in err_msg or "quota" in err_msg or "billing" in err_msg:
+                    logger.critical(f"LLM API limit hit: {err_msg}")
+                    raise e
+                logger.error(f"Unexpected error occurred: {err_msg}, retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
                 time.sleep(retry_delay)
                 retry_delay *= 2
 
@@ -109,14 +157,14 @@ class LoggerChatModel:
     def parse_llmresult(self, llmresult: AIMessage) -> Dict[str, Dict]:
         # Parse the LLM result into a structured format.
         content = llmresult.content
-        response_metadata = llmresult.response_metadata
-        id_ = llmresult.id
-        usage_metadata = llmresult.usage_metadata
+        response_metadata = getattr(llmresult, "response_metadata", {}) or {}
+        id_ = getattr(llmresult, "id", "")
+        usage_metadata = getattr(llmresult, "usage_metadata", None) or {}
 
         parsed_result = {
             "content": content,
             "response_metadata": {
-                "model_name": response_metadata.get("model_name", ""),
+                "model_name": response_metadata.get("model_name", response_metadata.get("model", "")),
                 "system_fingerprint": response_metadata.get("system_fingerprint", ""),
                 "finish_reason": response_metadata.get("finish_reason", ""),
                 "logprobs": response_metadata.get("logprobs", None),

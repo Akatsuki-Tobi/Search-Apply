@@ -162,3 +162,8 @@ venv.bak/
 mono_crash.*
 
 job_applications/
+
+# Search&Apply User configurations & details
+data_folder/plain_text_resume.yaml
+data_folder/secrets.yaml
+data_folder/work_preferences.yaml

@@ -3,10 +3,9 @@ import tempfile
 import textwrap
 import time
 import re  # For email validation
-from src.libs.resume_and_cover_builder.utils import LoggerChatModel
+from src.libs.resume_and_cover_builder.utils import LoggerChatModel, get_chat_model
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from loguru import logger
@@ -14,8 +13,7 @@ from pathlib import Path
 from langchain_core.prompt_values import StringPromptValue
 from langchain_core.runnables import RunnablePassthrough
 from langchain_text_splitters import TokenTextSplitter
-from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_community.retrievers import TFIDFRetriever
 from lib_resume_builder_AIHawk.config import global_config
 from langchain_community.document_loaders import TextLoader
 from requests.exceptions import HTTPError as HTTPStatusError  # HTTP error handling
@@ -35,12 +33,9 @@ logger.add(log_path / "gpt_resume.log", rotation="1 day", compression="zip", ret
 class LLMParser:
     def __init__(self, openai_api_key):
         self.llm = LoggerChatModel(
-            ChatOpenAI(
-                model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.4
-            )
+            get_chat_model(api_key=openai_api_key, temperature=0.4)
         )
-        self.llm_embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)  # Initialize embeddings
-        self.vectorstore = None  # Will be initialized after document loading
+        self.retriever = None  # Will be initialized after document loading
 
     @staticmethod
     def _preprocess_template_string(template: str) -> str:
@@ -55,7 +50,7 @@ class LLMParser:
     
     def set_body_html(self, body_html):
         """
-        Retrieves the job description from HTML, processes it, and initializes the vectorstore.
+        Retrieves the job description from HTML, processes it, and initializes the retriever.
         Args:
             body_html (str): The HTML content to process.
         """
@@ -80,12 +75,12 @@ class LLMParser:
         all_splits = text_splitter.split_documents(document)
         logger.debug(f"Text split into {len(all_splits)} fragments.")
         
-        # Create the vectorstore using FAISS
+        # Create the retriever using TFIDFRetriever
         try:
-            self.vectorstore = FAISS.from_documents(documents=all_splits, embedding=self.llm_embeddings)
-            logger.debug("Vectorstore successfully initialized.")
+            self.retriever = TFIDFRetriever.from_documents(all_splits)
+            logger.debug("TFIDFRetriever successfully initialized.")
         except Exception as e:
-            logger.error(f"Error during vectorstore creation: {e}")
+            logger.error(f"Error during retriever creation: {e}")
             raise
 
     def _retrieve_context(self, query: str, top_k: int = 3) -> str:
@@ -97,11 +92,10 @@ class LLMParser:
         Returns:
             str: Concatenated text fragments.
         """
-        if not self.vectorstore:
-            raise ValueError("Vectorstore not initialized. Run extract_job_description first.")
+        if not self.retriever:
+            raise ValueError("Retriever not initialized. Run set_body_html first.")
         
-        retriever = self.vectorstore.as_retriever()
-        retrieved_docs = retriever.get_relevant_documents(query)[:top_k]
+        retrieved_docs = self.retriever.get_relevant_documents(query)[:top_k]
         context = "\n\n".join(doc.page_content for doc in retrieved_docs)
         logger.debug(f"Context retrieved for query '{query}': {context[:200]}...")  # Log the first 200 characters
         return context

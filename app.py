@@ -22,6 +22,20 @@ from src.resume_schemas.resume import Resume
 from src.utils.chrome_utils import init_browser
 from src.utils.constants import SECRETS_YAML, WORK_PREFERENCES_YAML, PLAIN_TEXT_RESUME_YAML
 from main import ConfigValidator, FileManager
+import re
+
+def update_config_py(model_type: str, model_name: str):
+    config_path = Path("config.py")
+    if not config_path.exists():
+        return
+    try:
+        content = config_path.read_text(encoding="utf-8")
+        content = re.sub(r"LLM_MODEL_TYPE\s*=\s*['\"][^'\"]*['\"]", f"LLM_MODEL_TYPE = '{model_type}'", content)
+        content = re.sub(r"LLM_MODEL\s*=\s*['\"][^'\"]*['\"]", f"LLM_MODEL = '{model_name}'", content)
+        config_path.write_text(content, encoding="utf-8")
+        logger.info(f"Dynamically updated config.py: LLM_MODEL_TYPE='{model_type}', LLM_MODEL='{model_name}'")
+    except Exception as e:
+        logger.error(f"Failed to update config.py: {e}")
 
 app = FastAPI(title="Search&Apply Web Dashboard", version="1.0.0")
 
@@ -121,12 +135,16 @@ async def update_profile(profile: ProfileRequest):
         # Validate syntax by parsing them before writing
         yaml.safe_load(profile.resume_yaml)
         yaml.safe_load(profile.preferences_yaml)
-        yaml.safe_load(profile.secrets_yaml)
+        secrets = yaml.safe_load(profile.secrets_yaml) or {}
 
         # Write to files
         resume_path.write_text(profile.resume_yaml, encoding="utf-8")
         preferences_path.write_text(profile.preferences_yaml, encoding="utf-8")
         secrets_path.write_text(profile.secrets_yaml, encoding="utf-8")
+
+        model_type = secrets.get("llm_model_type", "openai")
+        model_name = secrets.get("llm_model", "gpt-4o-mini")
+        update_config_py(model_type, model_name)
 
         logger.info("Successfully updated configurations in data_folder.")
         return {"status": "success", "message": "Profiles saved and validated."}
@@ -161,6 +179,11 @@ async def update_profile_json(payload: ProfileJsonRequest):
         resume_path.write_text(resume_yaml, encoding="utf-8")
         preferences_path.write_text(preferences_yaml, encoding="utf-8")
         secrets_path.write_text(secrets_yaml, encoding="utf-8")
+
+        # Update config.py dynamically
+        model_type = payload.secrets_json.get("llm_model_type", "openai")
+        model_name = payload.secrets_json.get("llm_model", "gpt-4o-mini")
+        update_config_py(model_type, model_name)
 
         logger.info("Successfully updated JSON configurations in data_folder.")
         return {"status": "success", "message": "Profiles saved and validated."}
@@ -308,9 +331,9 @@ async def parse_resume_file(file: UploadFile = File(...)):
     with open(secrets_path, "r", encoding="utf-8") as f:
         secrets = yaml.safe_load(f) or {}
     
-    api_key = secrets.get("llm_api_key", "") or secrets.get("openai_api_key", "")
+    api_key = secrets.get("llm_api_key", "")
     if not api_key:
-        raise HTTPException(status_code=400, detail="OpenAI API Key (llm_api_key) is missing in your Secrets tab. Please configure it first!")
+        raise HTTPException(status_code=400, detail="LLM API Key (llm_api_key) is missing in your Secrets tab. Please configure it first!")
          
     try:
         raw_text = await extract_text_from_upload(file)
@@ -323,10 +346,13 @@ async def parse_resume_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Extracted text is empty. Please check your file content.")
         
     try:
-        from langchain_openai import ChatOpenAI
+        from src.libs.resume_and_cover_builder.utils import get_chat_model
         from langchain_core.messages import SystemMessage, HumanMessage
         
-        chat = ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=api_key, temperature=0.2)
+        model_type = secrets.get("llm_model_type", "openai")
+        model_name = secrets.get("llm_model", "gpt-4o-mini")
+        
+        chat = get_chat_model(api_key=api_key, model_type=model_type, model_name=model_name, temperature=0.2)
         
         system_prompt = (
             "You are an expert resume parser. Extract structured details from the user's raw resume text "
