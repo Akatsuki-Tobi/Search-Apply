@@ -156,7 +156,7 @@ async def update_profile_json(payload: ProfileJsonRequest):
         try:
             Resume(resume_yaml)
         except Exception as e:
-            raise ValueError(f"Resume structure validation failed: {e}")
+            logger.warning(f"Saved resume has schema warnings (this is fine until you synthesize a letter): {e}")
 
         resume_path.write_text(resume_yaml, encoding="utf-8")
         preferences_path.write_text(preferences_yaml, encoding="utf-8")
