@@ -234,30 +234,39 @@ def create_cover_letter(parameters: dict, llm_api_key: str):
         if not available_styles:
             logger.warning("No styles available. Proceeding without style selection.")
         else:
-            # Present style choices to the user
-            choices = style_manager.format_choices(available_styles)
-            questions = [
-                inquirer.List(
-                    "style",
-                    message="Select a style for the resume:",
-                    choices=choices,
-                )
-            ]
-            style_answer = inquirer.prompt(questions)
-            if style_answer and "style" in style_answer:
-                selected_choice = style_answer["style"]
-                for style_name, (file_name, author_link) in available_styles.items():
-                    if selected_choice.startswith(style_name):
-                        style_manager.set_selected_style(style_name)
-                        logger.info(f"Selected style: {style_name}")
-                        break
+            if not sys.stdin.isatty():
+                selected_style = list(available_styles.keys())[0]
+                style_manager.set_selected_style(selected_style)
+                logger.info(f"Automatically selected default style: {selected_style}")
             else:
-                logger.warning("No style selected. Proceeding with default style.")
-        questions = [
-    inquirer.Text('job_url', message="Please enter the URL of the job description:")
-        ]
-        answers = inquirer.prompt(questions)
-        job_url = answers.get('job_url')
+                # Present style choices to the user
+                choices = style_manager.format_choices(available_styles)
+                questions = [
+                    inquirer.List(
+                        "style",
+                        message="Select a style for the resume:",
+                        choices=choices,
+                    )
+                ]
+                style_answer = inquirer.prompt(questions)
+                if style_answer and "style" in style_answer:
+                    selected_choice = style_answer["style"]
+                    for style_name, (file_name, author_link) in available_styles.items():
+                        if selected_choice.startswith(style_name):
+                            style_manager.set_selected_style(style_name)
+                            logger.info(f"Selected style: {style_name}")
+                            break
+                else:
+                    logger.warning("No style selected. Proceeding with default style.")
+        if not sys.stdin.isatty():
+            print("Please enter the URL of the job description:")
+            job_url = sys.stdin.readline().strip()
+        else:
+            questions = [
+                inquirer.Text('job_url', message="Please enter the URL of the job description:")
+            ]
+            answers = inquirer.prompt(questions)
+            job_url = answers.get('job_url')
         resume_generator = ResumeGenerator()
         resume_object = Resume(plain_text_resume)
         driver = init_browser()
@@ -321,28 +330,37 @@ def create_resume_pdf_job_tailored(parameters: dict, llm_api_key: str):
         if not available_styles:
             logger.warning("No styles available. Proceeding without style selection.")
         else:
-            # Present style choices to the user
-            choices = style_manager.format_choices(available_styles)
-            questions = [
-                inquirer.List(
-                    "style",
-                    message="Select a style for the resume:",
-                    choices=choices,
-                )
-            ]
-            style_answer = inquirer.prompt(questions)
-            if style_answer and "style" in style_answer:
-                selected_choice = style_answer["style"]
-                for style_name, (file_name, author_link) in available_styles.items():
-                    if selected_choice.startswith(style_name):
-                        style_manager.set_selected_style(style_name)
-                        logger.info(f"Selected style: {style_name}")
-                        break
+            if not sys.stdin.isatty():
+                selected_style = list(available_styles.keys())[0]
+                style_manager.set_selected_style(selected_style)
+                logger.info(f"Automatically selected default style: {selected_style}")
             else:
-                logger.warning("No style selected. Proceeding with default style.")
-        questions = [inquirer.Text('job_url', message="Please enter the URL of the job description:")]
-        answers = inquirer.prompt(questions)
-        job_url = answers.get('job_url')
+                # Present style choices to the user
+                choices = style_manager.format_choices(available_styles)
+                questions = [
+                    inquirer.List(
+                        "style",
+                        message="Select a style for the resume:",
+                        choices=choices,
+                    )
+                ]
+                style_answer = inquirer.prompt(questions)
+                if style_answer and "style" in style_answer:
+                    selected_choice = style_answer["style"]
+                    for style_name, (file_name, author_link) in available_styles.items():
+                        if selected_choice.startswith(style_name):
+                            style_manager.set_selected_style(style_name)
+                            logger.info(f"Selected style: {style_name}")
+                            break
+                else:
+                    logger.warning("No style selected. Proceeding with default style.")
+        if not sys.stdin.isatty():
+            print("Please enter the URL of the job description:")
+            job_url = sys.stdin.readline().strip()
+        else:
+            questions = [inquirer.Text('job_url', message="Please enter the URL of the job description:")]
+            answers = inquirer.prompt(questions)
+            job_url = answers.get('job_url')
         resume_generator = ResumeGenerator()
         resume_object = Resume(plain_text_resume)
         driver = init_browser()
@@ -407,25 +425,30 @@ def create_resume_pdf(parameters: dict, llm_api_key: str):
         if not available_styles:
             logger.warning("No styles available. Proceeding without style selection.")
         else:
-            # Present style choices to the user
-            choices = style_manager.format_choices(available_styles)
-            questions = [
-                inquirer.List(
-                    "style",
-                    message="Select a style for the resume:",
-                    choices=choices,
-                )
-            ]
-            style_answer = inquirer.prompt(questions)
-            if style_answer and "style" in style_answer:
-                selected_choice = style_answer["style"]
-                for style_name, (file_name, author_link) in available_styles.items():
-                    if selected_choice.startswith(style_name):
-                        style_manager.set_selected_style(style_name)
-                        logger.info(f"Selected style: {style_name}")
-                        break
+            if not sys.stdin.isatty():
+                selected_style = list(available_styles.keys())[0]
+                style_manager.set_selected_style(selected_style)
+                logger.info(f"Automatically selected default style: {selected_style}")
             else:
-                logger.warning("No style selected. Proceeding with default style.")
+                # Present style choices to the user
+                choices = style_manager.format_choices(available_styles)
+                questions = [
+                    inquirer.List(
+                        "style",
+                        message="Select a style for the resume:",
+                        choices=choices,
+                    )
+                ]
+                style_answer = inquirer.prompt(questions)
+                if style_answer and "style" in style_answer:
+                    selected_choice = style_answer["style"]
+                    for style_name, (file_name, author_link) in available_styles.items():
+                        if selected_choice.startswith(style_name):
+                            style_manager.set_selected_style(style_name)
+                            logger.info(f"Selected style: {style_name}")
+                            break
+                else:
+                    logger.warning("No style selected. Proceeding with default style.")
 
         # Initialize the Resume Generator
         resume_generator = ResumeGenerator()
@@ -498,20 +521,38 @@ def handle_inquiries(selected_actions: List[str], parameters: dict, llm_api_key:
 
 def prompt_user_action() -> str:
     """
-    Use inquirer to ask the user which action they want to perform.
-
-    :return: Selected action.
+    Use inquirer or fallback to standard stdin input if not in a TTY.
     """
+    choices = [
+        "Generate Resume",
+        "Generate Resume Tailored for Job Description",
+        "Generate Tailored Cover Letter for Job Description",
+    ]
+    if not sys.stdin.isatty():
+        print("Non-interactive terminal detected. Please enter option number:")
+        for i, choice in enumerate(choices, 1):
+            print(f"{i}. {choice}")
+        try:
+            line = sys.stdin.readline().strip()
+            if not line:
+                return ""
+            if line.isdigit():
+                idx = int(line) - 1
+                if 0 <= idx < len(choices):
+                    return choices[idx]
+            for choice in choices:
+                if line.lower() in choice.lower():
+                    return choice
+            return ""
+        except Exception as e:
+            print(f"Error reading stdin: {e}")
+            return ""
     try:
         questions = [
             inquirer.List(
                 'action',
                 message="Select the action you want to perform:",
-                choices=[
-                    "Generate Resume",
-                    "Generate Resume Tailored for Job Description",
-                    "Generate Tailored Cover Letter for Job Description",
-                ],
+                choices=choices,
             ),
         ]
         answer = inquirer.prompt(questions)

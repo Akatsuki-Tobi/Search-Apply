@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search&Apply Dashboard</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Background Glow Blobs -->
+    <div class="glow-blob glow-top-left"></div>
+    <div class="glow-blob glow-bottom-right"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo-wrapper">
+                <img src="/static/logo.png" alt="Search&Apply" class="logo-img" id="logo-branding">
+                <h1>Search&Apply</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="openProfileModal()">
+                    <i class="fa-solid fa-gears"></i> Configure Profile
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace-grid">
+            <!-- Left Panel: Job Details Input -->
+            <section class="card control-panel animate-fade-in">
+                <h2><i class="fa-solid fa-briefcase text-gradient"></i> Action Center</h2>
+                <p class="description">Select a resume style and enter the job link to synthesize a tailored cover letter.</p>
+                
+                <form id="generator-form" onsubmit="generateCoverLetter(event)">
+                    <div class="form-group">
+                        <label for="job-url"><i class="fa-solid fa-link"></i> Job Description URL</label>
+                        <input type="url" id="job-url" placeholder="https://linkedin.com/jobs/view/..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="style-select"><i class="fa-solid fa-palette"></i> Resume Template Style</label>
+                        <select id="style-select" required>
+                            <option value="">Loading styles...</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full-width" id="btn-submit">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Synthesize Cover Letter
+                    </button>
+                </form>
+            </section>
+
+            <!-- Center Panel: Real-time System Logs -->
+            <section class="card log-panel animate-fade-in">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-terminal text-gradient"></i> Execution Console</h2>
+                    <span class="pulse-indicator" id="console-status">
+                        <span class="pulse-dot"></span>
+                        <span class="status-text">Engine Ready</span>
+                    </span>
+                </div>
+                <p class="description">Real-time LLM reasoning and Selenium browser compilation outputs.</p>
+                
+                <div class="console-box" id="console-box">
+                    <div class="console-line system-line">[System] Stdin redirect fallbacks initiated successfully.</div>
+                </div>
+            </section>
+
+            <!-- Right Panel: PDF Viewer & Deliverable Download -->
+            <section class="card preview-panel animate-fade-in">
+                <h2><i class="fa-solid fa-file-pdf text-gradient"></i> Deliverable Preview</h2>
+                <p class="description">Interactive cover letter PDF rendering output.</p>
+                
+                <div class="pdf-container" id="pdf-container">
+                    <div class="pdf-placeholder">
+                        <i class="fa-regular fa-file-pdf placeholder-icon"></i>
+                        <p>No document synthesized yet.</p>
+                        <span>Trigger "Synthesize Cover Letter" to compile PDF.</span>
+                    </div>
+                </div>
+
+                <div class="preview-actions hidden" id="preview-actions">
+                    <a id="btn-download" href="#" target="_blank" class="btn btn-primary">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Download PDF
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Configure Profile Modal -->
+    <div class="modal-backdrop hidden" id="profile-modal">
+        <div class="modal card">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-sliders text-gradient"></i> Profile Configurations</h2>
+                <button class="close-btn" onclick="closeProfileModal()">&times;</button>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tab-resume')">Resume (YAML)</button>
+                <button class="tab-btn" onclick="switchTab('tab-preferences')">Preferences (YAML)</button>
+                <button class="tab-btn" onclick="switchTab('tab-secrets')">Secrets (YAML)</button>
+            </div>
+
+            <div class="tab-content" id="tab-resume">
+                <textarea id="yaml-resume" class="code-editor" spellcheck="false"></textarea>
+            </div>
+            <div class="tab-content hidden" id="tab-preferences">
+                <textarea id="yaml-preferences" class="code-editor" spellcheck="false"></textarea>
+            </div>
+            <div class="tab-content hidden" id="tab-secrets">
+                <textarea id="yaml-secrets" class="code-editor" spellcheck="false"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeProfileModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save & Validate</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
