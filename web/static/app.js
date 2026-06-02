@@ -195,3 +195,74 @@ async function saveProfile() {
         alert("Save Error: " + err.message);
     }
 }
+
+// 5. Load demo resume yaml
+async function triggerDemoResume() {
+    if (!confirm("Are you sure you want to load the Demo Resume? This will replace your current resume tab content.")) return;
+    
+    const statusSpan = document.getElementById("upload-status");
+    statusSpan.textContent = "Loading Demo...";
+    statusSpan.style.color = "var(--text-secondary)";
+    
+    try {
+        const response = await fetch("/api/load-demo-resume", {
+            method: "POST"
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Failed to load demo resume.");
+        }
+        
+        const data = await response.json();
+        document.getElementById("yaml-resume").value = data.yaml;
+        statusSpan.textContent = "Demo loaded successfully!";
+        statusSpan.style.color = "#10b981";
+        appendConsoleLine("System", "Demo resume loaded successfully.", "info-line");
+    } catch (err) {
+        statusSpan.textContent = "Load failed.";
+        statusSpan.style.color = "var(--accent)";
+        alert("Load Error: " + err.message);
+    }
+}
+
+// 6. Upload PDF/TXT and parse using LLM
+async function uploadAndParseResume() {
+    const fileInput = document.getElementById("resume-file");
+    if (!fileInput.files || fileInput.files.length === 0) return;
+    
+    const file = fileInput.files[0];
+    const statusSpan = document.getElementById("upload-status");
+    
+    statusSpan.textContent = "Parsing via LLM (takes a few seconds)...";
+    statusSpan.style.color = "#38bdf8";
+    appendConsoleLine("System", `Uploading and parsing resume: ${file.name} via LLM...`, "system-line");
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+        const response = await fetch("/api/parse-resume-file", {
+            method: "POST",
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Parsing failed.");
+        }
+        
+        const data = await response.json();
+        document.getElementById("yaml-resume").value = data.yaml;
+        statusSpan.textContent = "Parsed successfully!";
+        statusSpan.style.color = "#10b981";
+        appendConsoleLine("System", `Successfully parsed and validated resume YAML.`, "info-line");
+    } catch (err) {
+        statusSpan.textContent = "Parsing failed.";
+        statusSpan.style.color = "var(--accent)";
+        appendConsoleLine("System", `Resume parsing error: ${err.message}`, "error-line");
+        alert("Parsing Error: " + err.message);
+    } finally {
+        fileInput.value = "";
+    }
+}

@@ -109,6 +109,18 @@
             </div>
 
             <div class="tab-content" id="tab-resume">
+                <div class="tab-toolbar" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem;" onclick="triggerDemoResume()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Load Demo Resume
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="file" id="resume-file" accept=".pdf,.txt" style="display: none;" onchange="uploadAndParseResume()">
+                        <label for="resume-file" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; cursor: pointer; margin-bottom: 0;">
+                            <i class="fa-solid fa-file-pdf"></i> Upload & Parse PDF/TXT
+                        </label>
+                        <span id="upload-status" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+                    </div>
+                </div>
                 <textarea id="yaml-resume" class="code-editor" spellcheck="false"></textarea>
             </div>
             <div class="tab-content hidden" id="tab-preferences">
