@@ -5,6 +5,7 @@ let logEventSource = null;
 document.addEventListener("DOMContentLoaded", () => {
     fetchStyles();
     setupLogStream();
+    checkResumeStatus();
 });
 
 // 1. Fetch template styles list
@@ -191,6 +192,7 @@ async function saveProfile() {
 
         appendConsoleLine("System", "Configuration and secrets updated and validated successfully.", "info-line");
         closeProfileModal();
+        await checkResumeStatus();
     } catch (err) {
         alert("Save Error: " + err.message);
     }
@@ -219,6 +221,7 @@ async function triggerDemoResume() {
         statusSpan.textContent = "Demo loaded successfully!";
         statusSpan.style.color = "#10b981";
         appendConsoleLine("System", "Demo resume loaded successfully.", "info-line");
+        await checkResumeStatus();
     } catch (err) {
         statusSpan.textContent = "Load failed.";
         statusSpan.style.color = "var(--accent)";
@@ -257,11 +260,111 @@ async function uploadAndParseResume() {
         statusSpan.textContent = "Parsed successfully!";
         statusSpan.style.color = "#10b981";
         appendConsoleLine("System", `Successfully parsed and validated resume YAML.`, "info-line");
+        await checkResumeStatus();
     } catch (err) {
         statusSpan.textContent = "Parsing failed.";
         statusSpan.style.color = "var(--accent)";
         appendConsoleLine("System", `Resume parsing error: ${err.message}`, "error-line");
         alert("Parsing Error: " + err.message);
+    } finally {
+        fileInput.value = "";
+    }
+}
+
+// 7. Check current resume status
+async function checkResumeStatus() {
+    const badge = document.getElementById("action-center-resume-status-badge");
+    const details = document.getElementById("action-center-resume-details");
+    const card = document.getElementById("action-center-resume-status-card");
+    
+    if (!badge || !details) return;
+    
+    try {
+        const response = await fetch("/api/resume-status");
+        if (!response.ok) throw new Error("Failed to check resume status.");
+        const data = await response.json();
+        
+        if (data.valid) {
+            badge.textContent = "Active Resume";
+            badge.style.backgroundColor = "#0d9488";
+            details.innerHTML = `<strong>Candidate:</strong> ${data.name}<br><strong>Email:</strong> ${data.email || 'N/A'}`;
+            if (card) card.style.borderColor = "rgba(13, 148, 136, 0.4)";
+        } else {
+            badge.textContent = "Action Required";
+            badge.style.backgroundColor = "#e11d48";
+            details.innerHTML = `<span style="color: #f43f5e;"><i class="fa-solid fa-triangle-exclamation"></i> ${data.reason || 'No valid resume loaded.'}</span>`;
+            if (card) card.style.borderColor = "rgba(225, 29, 72, 0.3)";
+        }
+    } catch (err) {
+        console.error(err);
+        badge.textContent = "Error";
+        badge.style.backgroundColor = "#ef4444";
+        details.textContent = "Error loading resume status.";
+    }
+}
+
+async function triggerDemoResumeActionCenter() {
+    const details = document.getElementById("action-center-resume-details");
+    if (details) details.textContent = "Loading Demo...";
+    
+    try {
+        const response = await fetch("/api/load-demo-resume", {
+            method: "POST"
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Failed to load demo resume.");
+        }
+        
+        const data = await response.json();
+        const modalTextarea = document.getElementById("yaml-resume");
+        if (modalTextarea) {
+            modalTextarea.value = data.yaml;
+        }
+        appendConsoleLine("System", "Demo resume loaded successfully.", "info-line");
+        await checkResumeStatus();
+    } catch (err) {
+        alert("Load Error: " + err.message);
+        await checkResumeStatus();
+    }
+}
+
+async function uploadResumeActionCenter() {
+    const fileInput = document.getElementById("action-center-resume-file");
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+    
+    const file = fileInput.files[0];
+    const details = document.getElementById("action-center-resume-details");
+    
+    if (details) details.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Parsing "${file.name}" via LLM...`;
+    appendConsoleLine("System", `Uploading and parsing resume: ${file.name} via LLM...`, "system-line");
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+        const response = await fetch("/api/parse-resume-file", {
+            method: "POST",
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Parsing failed.");
+        }
+        
+        const data = await response.json();
+        const modalTextarea = document.getElementById("yaml-resume");
+        if (modalTextarea) {
+            modalTextarea.value = data.yaml;
+        }
+        appendConsoleLine("System", `Successfully parsed and validated resume YAML.`, "info-line");
+        await checkResumeStatus();
+    } catch (err) {
+        appendConsoleLine("System", `Resume parsing error: ${err.message}`, "error-line");
+        alert("Parsing Error: " + err.message);
+        await checkResumeStatus();
     } finally {
         fileInput.value = "";
     }

@@ -35,12 +35,32 @@
             <!-- Left Panel: Job Details Input -->
             <section class="card control-panel animate-fade-in">
                 <h2><i class="fa-solid fa-briefcase text-gradient"></i> Action Center</h2>
-                <p class="description">Select a resume style and enter the job link to synthesize a tailored cover letter.</p>
+                <p class="description">Upload your resume, select a template, and enter the job link to synthesize a tailored cover letter.</p>
                 
                 <form id="generator-form" onsubmit="generateCoverLetter(event)">
+                    <!-- Resume Status & Upload directly in Action Center -->
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-file-invoice"></i> Your Resume</label>
+                        <div class="resume-status-card" id="action-center-resume-status-card" style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: var(--transition);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span id="action-center-resume-status-badge" style="font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: #e11d48; color: #fff; text-transform: uppercase;">Checking...</span>
+                                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px;" onclick="triggerDemoResumeActionCenter()">Use Demo</button>
+                            </div>
+                            <div id="action-center-resume-details" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                                No valid resume loaded. Please upload your resume PDF or TXT to get started.
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="file" id="action-center-resume-file" accept=".pdf,.txt" style="display: none;" onchange="uploadResumeActionCenter()">
+                                <label for="action-center-resume-file" class="btn btn-secondary btn-full-width" style="padding: 10px 16px; font-size: 0.82rem; cursor: pointer; text-align: center; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload PDF / TXT
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="job-url"><i class="fa-solid fa-link"></i> Job Description URL</label>
-                        <input type="url" id="job-url" placeholder="https://linkedin.com/jobs/view/..." required>
+                        <input type="url" id="job-url" placeholder="https://unstop.com/jobs/..." required>
                     </div>
 
                     <div class="form-group">

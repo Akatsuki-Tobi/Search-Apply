@@ -116,6 +116,36 @@ async def update_profile(profile: ProfileRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/resume-status")
+async def get_resume_status():
+    resume_path = Path("data_folder/plain_text_resume.yaml")
+    if not resume_path.exists():
+        return {"valid": False, "reason": "No resume file exists."}
+    try:
+        content = resume_path.read_text(encoding="utf-8")
+        placeholders = ["[Your ", "[Company ", "[Project ", "[Achievement ", "[Certification ", "[Language ", "[Notice ", "[Salary ", "[Gender ", "[Yes/No", "[Grade"]
+        found_placeholders = [p for p in placeholders if p in content]
+        if found_placeholders:
+            return {
+                "valid": False,
+                "reason": f"Placeholder detected: {found_placeholders[0]}"
+            }
+        
+        resume_obj = Resume(content)
+        name = "Candidate"
+        if resume_obj.personal_information:
+            pi = resume_obj.personal_information
+            name_parts = []
+            if pi.name:
+                name_parts.append(pi.name)
+            if pi.surname:
+                name_parts.append(pi.surname)
+            if name_parts:
+                name = " ".join(name_parts)
+        return {"valid": True, "name": name, "email": resume_obj.personal_information.email if resume_obj.personal_information else None}
+    except Exception as e:
+        return {"valid": False, "reason": str(e)}
+
 @app.get("/api/logs")
 async def stream_logs():
     async def log_generator():
