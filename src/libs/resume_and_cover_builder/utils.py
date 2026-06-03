@@ -86,10 +86,13 @@ def get_chat_model(api_key: str, model_type: str = None, model_name: str = None,
 
     model_type = model_type.lower()
     
+    import os
     if model_type == "openai":
+        os.environ["OPENAI_API_KEY"] = api_key
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(model_name=model_name, openai_api_key=api_key, temperature=temperature)
     elif model_type == "gemini":
+        os.environ["GOOGLE_API_KEY"] = api_key
         from langchain_google_genai import ChatGoogleGenerativeAI, HarmBlockThreshold, HarmCategory
         return ChatGoogleGenerativeAI(
             model=model_name,
@@ -110,9 +113,11 @@ def get_chat_model(api_key: str, model_type: str = None, model_name: str = None,
             }
         )
     elif model_type == "claude":
+        os.environ["ANTHROPIC_API_KEY"] = api_key
         from langchain_anthropic import ChatAnthropic
         return ChatAnthropic(model=model_name, api_key=api_key, temperature=temperature)
     else:
+        os.environ["OPENAI_API_KEY"] = api_key
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(model_name=model_name, openai_api_key=api_key, temperature=temperature)
 
