@@ -260,35 +260,72 @@ input[type="url"]:focus, select:focus, textarea.code-editor:focus {
 }
 
 .console-box {
-    background-color: var(--console-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
+    background: radial-gradient(circle at 50% 50%, rgba(10, 8, 24, 0.95), rgba(3, 2, 6, 0.98));
+    border: 1px solid var(--primary-glow);
+    border-radius: 16px;
     height: 380px;
-    padding: 16px;
+    padding: 20px;
     font-family: var(--font-mono);
     font-size: 0.82rem;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    box-shadow: inset 0 0 20px rgba(124, 58, 237, 0.15), 0 0 15px rgba(124, 58, 237, 0.05);
+    position: relative;
+}
+
+/* Neon Scanline effect */
+.console-box::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 4px;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0.45;
 }
 
 .console-line {
-    color: var(--console-text);
+    color: #38bdf8;
+    text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
     word-break: break-all;
     white-space: pre-wrap;
+    line-height: 1.4;
+    position: relative;
+    z-index: 12;
 }
 
 .system-line {
-    color: #a855f7;
+    color: #c084fc;
+    text-shadow: 0 0 8px rgba(192, 132, 252, 0.4);
 }
 
 .error-line {
-    color: var(--accent);
+    color: #fb7185;
+    text-shadow: 0 0 8px rgba(251, 113, 133, 0.4);
 }
 
 .info-line {
-    color: #10b981;
+    color: #34d399;
+    text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+}
+
+/* Futuristic scrollbars */
+.console-box::-webkit-scrollbar {
+    width: 6px;
+}
+.console-box::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+.console-box::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+    box-shadow: 0 0 8px var(--primary);
 }
 
 /* --- PDF Preview Panel --- */

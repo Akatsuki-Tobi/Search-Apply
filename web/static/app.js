@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchStyles();
     setupLogStream();
     checkResumeStatus();
+    checkApiKeyStatus();
 });
 
 // 1. Fetch template styles list
@@ -519,5 +520,109 @@ async function uploadResumeActionCenter() {
         await checkResumeStatus();
     } finally {
         fileInput.value = "";
+    }
+}
+
+async function checkApiKeyStatus() {
+    try {
+        const response = await fetch("/api/profile");
+        if (!response.ok) return;
+        const data = await response.json();
+        activeProfileData = data;
+        
+        const apiKey = (data.secrets_json.llm_api_key || "").trim();
+        if (!apiKey || apiKey === "[Your API Key]" || apiKey.includes("[Your ")) {
+            // Show onboarding modal
+            document.getElementById("onboarding-api-modal").classList.remove("hidden");
+            // Set defaults in onboarding inputs
+            document.getElementById("onboard-llm-api-key").value = "";
+            document.getElementById("onboard-llm-model-type").value = data.secrets_json.llm_model_type || "openai";
+            document.getElementById("onboard-llm-model").value = data.secrets_json.llm_model || "gpt-4o-mini";
+            updateOnboardDefaultModel();
+        }
+    } catch (err) {
+        console.error("Error checking API key status:", err);
+    }
+}
+
+async function saveOnboardingApiKey() {
+    const apiKey = document.getElementById("onboard-llm-api-key").value.trim();
+    if (!apiKey) {
+        alert("Please enter a valid API Key to get started.");
+        return;
+    }
+    
+    if (!activeProfileData) {
+        const res = await fetch("/api/profile");
+        activeProfileData = await res.json();
+    }
+    
+    activeProfileData.secrets_json.llm_api_key = apiKey;
+    activeProfileData.secrets_json.llm_model_type = document.getElementById("onboard-llm-model-type").value;
+    activeProfileData.secrets_json.llm_model = document.getElementById("onboard-llm-model").value;
+    
+    const btnSubmit = document.querySelector("#onboarding-api-modal .btn-primary");
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Initializing...`;
+    
+    try {
+        const response = await fetch("/api/profile-json", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                resume_json: activeProfileData.resume_json,
+                preferences_json: activeProfileData.preferences_json,
+                secrets_json: activeProfileData.secrets_json
+            })
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Failed to initialize key.");
+        }
+        
+        appendConsoleLine("System", `Engine initialized successfully with ${activeProfileData.secrets_json.llm_model_type.toUpperCase()} (${activeProfileData.secrets_json.llm_model}).`, "info-line");
+        document.getElementById("onboarding-api-modal").classList.add("hidden");
+        
+        // Update settings inputs to match
+        document.getElementById("form-llm-api-key").value = apiKey;
+        document.getElementById("form-llm-model-type").value = activeProfileData.secrets_json.llm_model_type;
+        document.getElementById("form-llm-model").value = activeProfileData.secrets_json.llm_model;
+        
+        await checkResumeStatus();
+    } catch (err) {
+        alert("Error saving API Key: " + err.message);
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<i class="fa-solid fa-circle-check"></i> Initialize Engine`;
+    }
+}
+
+function toggleOnboardKeyPeek() {
+    const keyInput = document.getElementById("onboard-llm-api-key");
+    const peekIcon = document.getElementById("toggle-onboard-key-peek");
+    if (keyInput.type === "password") {
+        keyInput.type = "text";
+        peekIcon.className = "fa-solid fa-eye-slash";
+    } else {
+        keyInput.type = "password";
+        peekIcon.className = "fa-solid fa-eye";
+    }
+}
+
+function updateOnboardDefaultModel() {
+    const provider = document.getElementById("onboard-llm-model-type").value;
+    const modelInput = document.getElementById("onboard-llm-model");
+    const infoSpan = document.getElementById("onboard-provider-info");
+    
+    if (provider === "openai") {
+        modelInput.value = "gpt-4o-mini";
+        infoSpan.innerHTML = `OpenAI keys start with <code>sk-</code>. Standard model is <code>gpt-4o-mini</code>.`;
+    } else if (provider === "gemini") {
+        modelInput.value = "gemini-1.5-flash";
+        infoSpan.innerHTML = `Google Gemini keys can be generated for free in Google AI Studio. Standard model is <code>gemini-1.5-flash</code>.`;
+    } else if (provider === "claude") {
+        modelInput.value = "claude-3-5-sonnet-20240620";
+        infoSpan.innerHTML = `Anthropic Claude keys start with <code>sk-ant-</code>. Standard model is <code>claude-3-5-sonnet-20240620</code>.`;
     }
 }

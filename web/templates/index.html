@@ -307,6 +307,47 @@
         </div>
     </div>
 
+    <!-- Onboarding API Setup Modal -->
+    <div class="modal-backdrop hidden" id="onboarding-api-modal">
+        <div class="modal card animate-fade-in" style="width: 500px; border-color: var(--primary);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                <h2><i class="fa-solid fa-rocket text-gradient"></i> Welcome to Search&Apply!</h2>
+            </div>
+            <p class="description" style="margin-bottom: 16px;">Let's get you set up. Choose your LLM Provider and enter your API Key to enable automated resume and cover letter synthesis.</p>
+            
+            <div class="form-group">
+                <label for="onboard-llm-api-key"><i class="fa-solid fa-key text-gradient"></i> API Secret Key</label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="onboard-llm-api-key" placeholder="Enter API Key here..." style="padding-right: 48px;" required>
+                    <i class="fa-solid fa-eye" id="toggle-onboard-key-peek" style="position: absolute; right: 16px; cursor: pointer; color: var(--text-secondary);" onclick="toggleOnboardKeyPeek()"></i>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="onboard-llm-model-type">LLM Provider</label>
+                    <select id="onboard-llm-model-type" onchange="updateOnboardDefaultModel()">
+                        <option value="openai">OpenAI</option>
+                        <option value="gemini">Google Gemini</option>
+                        <option value="claude">Anthropic Claude</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="onboard-llm-model">Model Name</label>
+                    <input type="text" id="onboard-llm-model" placeholder="gpt-4o-mini">
+                </div>
+            </div>
+            
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 24px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                💡 <span id="onboard-provider-info">OpenAI keys start with <code>sk-</code>. Gemini keys are free of rate-limits for testing.</span>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 0;">
+                <button class="btn btn-primary btn-full-width" onclick="saveOnboardingApiKey()"><i class="fa-solid fa-circle-check"></i> Initialize Engine</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/app.js"></script>
 </body>
 </html>
