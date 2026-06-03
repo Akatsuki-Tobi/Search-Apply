@@ -13,7 +13,6 @@ from pathlib import Path
 from langchain_core.prompt_values import StringPromptValue
 from langchain_core.runnables import RunnablePassthrough
 from langchain_text_splitters import TokenTextSplitter
-from langchain_community.retrievers import TFIDFRetriever
 from lib_resume_builder_AIHawk.config import global_config
 from langchain_community.document_loaders import TextLoader
 from requests.exceptions import HTTPError as HTTPStatusError  # HTTP error handling
@@ -28,6 +27,28 @@ if not os.path.exists(log_folder):
     os.makedirs(log_folder)
 log_path = Path(log_folder).resolve()
 logger.add(log_path / "gpt_resume.log", rotation="1 day", compression="zip", retention="7 days", level="DEBUG")
+
+
+class SimpleKeywordRetriever:
+    def __init__(self, documents):
+        self.documents = documents
+
+    def get_relevant_documents(self, query: str) -> list:
+        # Extract alphanumeric words from query and lower-case them
+        query_words = set(re.findall(r'\w+', query.lower()))
+        if not query_words:
+            return self.documents
+            
+        scored_docs = []
+        for doc in self.documents:
+            doc_words = re.findall(r'\w+', doc.page_content.lower())
+            # Basic term overlap score
+            score = sum(1 for word in query_words if word in doc_words)
+            scored_docs.append((doc, score))
+            
+        # Sort documents by relevance score descending
+        scored_docs.sort(key=lambda x: x[1], reverse=True)
+        return [doc for doc, score in scored_docs]
 
 
 class LLMParser:
@@ -75,10 +96,10 @@ class LLMParser:
         all_splits = text_splitter.split_documents(document)
         logger.debug(f"Text split into {len(all_splits)} fragments.")
         
-        # Create the retriever using TFIDFRetriever
+        # Create the retriever using pure-Python SimpleKeywordRetriever
         try:
-            self.retriever = TFIDFRetriever.from_documents(all_splits)
-            logger.debug("TFIDFRetriever successfully initialized.")
+            self.retriever = SimpleKeywordRetriever(all_splits)
+            logger.debug("SimpleKeywordRetriever successfully initialized.")
         except Exception as e:
             logger.error(f"Error during retriever creation: {e}")
             raise
